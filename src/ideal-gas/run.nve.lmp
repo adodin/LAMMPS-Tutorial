@@ -1,0 +1,80 @@
+# ==============================================================================
+# ==============================================================================
+# Runs an NVE Simulation of an Ideal Gas
+# Written By: Amro Dodin (Geissler Group - UC Berkeley & LBL)
+# ==============================================================================
+# ==============================================================================
+
+# ==============================================================================
+# Set Simulation Parameters
+# ==============================================================================
+
+# Random Seeds for Atom Initialization
+variable SEED1 equal 256345 # Atom Positions
+variable SEED2 equal 562538 # Atom Velocities
+
+# Timestep & Simulation Length
+variable dt equal 1.0         # Timestep in fs
+variable n_step equal 10000   # Number of Timesteps
+
+# ==============================================================================
+# Set Up Simulation Box
+# ==============================================================================
+
+# Set Units, & Boundary Conditions
+units real
+dimension 3
+boundary p p p
+
+# Set Atom Specification Style (what data is stored per atom)
+atom_style atomic
+
+# Create 200 A x 200 A x 200 A Simulation Box centered at 0
+region box block -100 100 -100 100 -100 100
+create_box 1 box
+
+# ==============================================================================
+# Define Force Field (No Interactions)
+# ==============================================================================
+
+# Use Mass of Helium (4 a.u.)
+mass 1 4.0
+
+# Set Pair Coefficients (Zero)
+pair_style zero 0
+pair_coeff * *
+
+# ==============================================================================
+# Initialize System
+# ==============================================================================
+
+# Create Atoms (Molar Volume = 24.63 L/mol = 4.09e4 A^3/atom)
+create_atoms 1 random 200 ${SEED1} box
+
+# Randomly Initialize Velocities at 300 K
+velocity all create 300 ${SEED2}
+
+# ==============================================================================
+# Set Up Propagation
+# ==============================================================================
+
+# Set Timestep
+timestep ${dt}
+
+# Initialize NVE Propagator
+fix 1 all nve
+
+# ==============================================================================
+# Set Up Output
+# ==============================================================================
+
+# Output Thermodynamic Data every 100 Steps
+thermo 100
+
+# Output Atomistic Data every 100 Steps
+dump 1 all atom 100 ideal-gas-nve.lammpstrj
+
+# ==============================================================================
+# Run Simulation
+# ==============================================================================
+run ${n_step}
