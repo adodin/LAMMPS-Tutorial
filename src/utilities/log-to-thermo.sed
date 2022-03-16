@@ -1,6 +1,6 @@
-#!/usr/bin/sed -nf
+#!/usr/bin/sed -Enf
 
 /^Step/,/^Loop/ {
-  /^SHOCK/!p
-  /^Loop/!p
+  /^SHOCK:/n
+  /^Loop/ !p
 }
