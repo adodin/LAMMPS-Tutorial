@@ -1,6 +1,7 @@
 = LAMMPS Tutorial
 Amro Dodin 2022
 Version 0.1 (March 15, 2022)
+:rootdir: .
 :stylesheet: css/adoc-colony.css
 :toc: left
 :sectnums:
