@@ -6,6 +6,8 @@ Version 0.1 (March 15, 2022)
 
 == Introduction
 
+This tutorial teaches you how to run LAMMPS simulations of molecular systems.
+
 == Ideal Gas
 
 === Energy Conservation (NVE Simulations)
