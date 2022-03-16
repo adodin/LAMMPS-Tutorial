@@ -1,1 +1,1 @@
-asciidoc -b html5 -o index.html main.adoc 
+asciidoctor -b html5 -o index.html main.adoc 
