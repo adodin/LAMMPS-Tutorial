@@ -19,6 +19,9 @@ variable SEED3 equal 327642 # Langevin
 variable dt equal 1.0         # Timestep in fs
 variable n_step equal 10000   # Number of Timesteps
 
+# Temperatures
+variable T1 equal 300
+
 # ==============================================================================
 # Set Up Simulation Box
 # ==============================================================================
@@ -57,7 +60,7 @@ pair_coeff * *
 create_atoms 1 random 200 ${SEED1} box
 
 # Randomly Initialize Velocities at 300 K
-velocity all create 300 ${SEED2}
+velocity all create ${T1} ${SEED2}
 
 # ==============================================================================
 # Set Up Propagation
@@ -67,7 +70,7 @@ velocity all create 300 ${SEED2}
 timestep ${dt}
 
 # Initialize NVE Propagator
-fix lang all langevin 300 300 ${gamma} ${SEED3}
+fix lang all langevin ${T1} ${T1} ${gamma} ${SEED3}
 fix 1 all nve
 
 # ==============================================================================

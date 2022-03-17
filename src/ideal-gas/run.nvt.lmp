@@ -20,6 +20,10 @@ variable gamma equal 100
 variable dt equal 1.0         # Timestep in fs
 variable n_step equal 10000   # Number of Timesteps
 
+# Temeperatures
+variable T1 equal 1
+variable T2 equal 300
+
 # ==============================================================================
 # Set Up Simulation Box
 # ==============================================================================
@@ -58,7 +62,7 @@ pair_coeff * *
 create_atoms 1 random 200 ${SEED1} box
 
 # Randomly Initialize Velocities at 300 K
-velocity all create 1 ${SEED2}
+velocity all create ${T1} ${SEED2}
 
 # ==============================================================================
 # Set Up Propagation
@@ -68,7 +72,7 @@ velocity all create 1 ${SEED2}
 timestep ${dt}
 
 # Initialize NVE Propagator
-fix 1 all nvt temp 1 300 ${gamma}
+fix 1 all nvt temp ${T1} ${T2} ${gamma}
 
 # ==============================================================================
 # Set Up Output

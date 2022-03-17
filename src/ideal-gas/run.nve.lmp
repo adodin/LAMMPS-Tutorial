@@ -17,6 +17,9 @@ variable SEED2 equal 562538 # Atom Velocities
 variable dt equal 1.0         # Timestep in fs
 variable n_step equal 10000   # Number of Timesteps
 
+# Temperatures
+variable T1 equal 300
+
 # ==============================================================================
 # Set Up Simulation Box
 # ==============================================================================
@@ -52,7 +55,7 @@ pair_coeff * *
 create_atoms 1 random 200 ${SEED1} box
 
 # Randomly Initialize Velocities at 300 K
-velocity all create 300 ${SEED2}
+velocity all create ${T1} ${SEED2}
 
 # ==============================================================================
 # Set Up Propagation
