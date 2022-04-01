@@ -1,0 +1,125 @@
+# ==============================================================================
+# ==============================================================================
+# Lennard-Jones Liquid-Gas Phase Transitions
+# Written By: Amro Dodin  (Geissler Group - UC Berkeley Thanks & LBL)
+# Required Inputs: - T: Temperature (in LJ units)
+#                  - P: Pressure    (in LJ units)
+# ==============================================================================
+# ==============================================================================
+
+# ==============================================================================
+# Set Simulation Parameters
+# ==============================================================================
+
+# Random Seeds for Atom Initialization
+variable SEED1 equal 256345 # Atom 1 Positions
+variable SEED2 equal 562538 # Atom Velocities
+
+# Nose-Hoover Damping Parameters (in Timesteps)
+variable gammaT equal 100
+variable gammaP equal 1000
+
+# Timestep & Simulation Length
+variable dt     equal 0.005       # Timestep in LJ units
+variable n_eq   equal 50000       # Number of Equilibration Timesteps
+variable n_step equal 100000      # Number of Production Timesteps
+
+# Calculate Damping Parameters in Time units
+variable gT equal v_dt*v_gammaT
+variable gP equal v_dt*v_gammaP
+
+# ==============================================================================
+# Set Up Simulation Box
+# ==============================================================================
+
+# Set Log File
+log min.lj-liquid-gas.P${P}.T${T}.log
+
+# Set Units, & Boundary Conditions
+units lj
+dimension 3
+boundary p p p
+
+# Set Atom Specification Style (what data is stored per atom)
+atom_style atomic
+
+# Create Box
+region box block -8 8 -8 8 -8 8
+create_box 1 box
+
+# ==============================================================================
+# Define Force Field (Lennard Jones)
+# ==============================================================================
+
+mass 1 1.0
+
+# Set Pair Coefficients Lennard-Jones
+pair_style lj/cut 3.0
+pair_coeff 1 1 1.0 1.0
+
+# ==============================================================================
+# Initialize System
+# ==============================================================================
+# Create Atoms
+create_atoms 1 random 2100 ${SEED1} box
+
+# Randomly Initialize Velocities at 300 K
+velocity all create ${T} ${SEED2}
+
+# ==============================================================================
+# Set Up Propagation
+# ==============================================================================
+
+# Set Timestep
+timestep ${dt}
+
+# Initialize NVE Propagator
+fix 1 all npt temp ${T} ${T} ${gT} iso ${P} ${P} ${gP}
+
+# ==============================================================================
+# Set Up Output for Minimization
+# ==============================================================================
+
+# Output Thermodynamic Data every 100 Steps
+thermo_style custom step time temp press vol density ke pe econserve
+thermo 1
+# Output Atomistic Data every 100 Steps
+dump min all atom 100 min.lj-liquid-gas.P${P}.T${T}.lammpstrj
+
+
+# ==============================================================================
+# Minimize Configuration
+# ==============================================================================
+minimize 0.0 1e-8 1000 10000
+
+# ==============================================================================
+# Set Up Output for Equilibration
+# ==============================================================================
+
+log eq.lj-liquid-gas.P${P}.T${T}.log
+reset_timestep 0
+
+# Output Atomistic Data every 100 Steps
+undump min
+dump eq all atom 100 eq.lj-liquid-gas.P${P}.T${T}.lammpstrj
+
+# ==============================================================================
+# Run Equilibration
+# ==============================================================================
+run ${n_eq}
+
+# ==============================================================================
+# Set Up Output for Production
+# ==============================================================================
+log prod.lj-liquid-gas.P${P}.T${T}.log
+
+reset_timestep 0
+
+# Output Atomistic Data every 100 Steps
+undump eq
+dump prod all atom 100 prod.lj-liquid-gas.P${P}.T${T}.lammpstrj
+
+# ==============================================================================
+# Run Equilibration
+# ==============================================================================
+run ${n_step}
