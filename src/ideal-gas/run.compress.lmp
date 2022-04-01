@@ -25,7 +25,7 @@ variable T1 equal 300
 # Set Up Simulation Box
 # ==============================================================================
 
-log log.compress
+log log.compress.${tau}
 
 # Set Units, & Boundary Conditions
 units real

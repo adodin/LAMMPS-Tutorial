@@ -17,7 +17,7 @@ variable SEED3 equal 327642 # Langevin
 
 # Timestep & Simulation Length
 variable dt equal 1.0         # Timestep in fs
-variable n_step equal 10000   # Number of Timesteps
+variable n_step equal 100000   # Number of Timesteps
 
 # Temperatures
 variable T1 equal 300

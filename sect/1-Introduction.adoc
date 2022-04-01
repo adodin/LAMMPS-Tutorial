@@ -1,0 +1,19 @@
+=== Purpose of this Tutorial
+This tutorial is a hands on introduction to using LAMMPS
+for molecular simulations.
+LAMMPS is a large Molecular Dynamics (MD) software that is broadly used in
+used in Theoretical Chemistry research due to it's efficiency and broad range
+of available features.
+While the software is extensively documented at
+link:http://www.lammps.org[lammps.org],
+it can have a bit of a steep learning curve.
+
+This tutorial is intended to smooth the learning process for new LAMMPS users
+by introducing the core concepts gradually through increasingly sophisticated
+simulations.
+These simulations are physically motivated and will simulate phenomena
+that may be familiar from an undergraduate or graduate Statistical Mechanics
+course.
+They are also intended to serve as a programming cookbook that can be mixed
+and matched flexibly to construct more complex research simulations.
+The simulations will be paired with a discussion of the key concepts 
