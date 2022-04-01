@@ -1,0 +1,159 @@
+# ==============================================================================
+# ==============================================================================
+# Heterogeneous Liquid-Liquid Phase Separation in Lennard-Jones Fluid
+# Written By: Amro Dodin  (Geissler Group - UC Berkeley Thanks & LBL)
+# Required Inputs: - T: Temperature (in LJ units)
+#                  - P: Pressure    (in LJ units)
+#                  - x: Composition of Type 1
+# ==============================================================================
+# ==============================================================================
+
+# ==============================================================================
+# Set Simulation Parameters
+# ==============================================================================
+
+# Random Seeds for Atom Initialization
+variable SEED1 equal 256345 # Atom 1 Positions
+variable SEED2 equal 256345 # Atom 1 Positions
+variable SEED3 equal 562538 # Atom Velocities
+
+# Nose-Hoover Damping Parameters (in Timesteps)
+variable gammaT equal 100
+variable gammaP equal 1000
+
+# Initial Half Cell Size (L x L x 2L) & Number Density
+variable L equal 8
+variable Lz equal 2*v_L
+variable Lint equal -v_Lz+2*v_x*v_Lz
+variable rho equal 0.51269
+variable nLJ equal floor(16*v_rho*v_L^3)
+variable n1 equal floor(v_nLJ*v_x)
+variable n2 equal v_nLJ-v_n1
+
+# Timestep & Simulation Length
+variable dt     equal 0.005       # Timestep in LJ units
+variable n_eq   equal 50000       # Number of Equilibration Timesteps
+variable n_step equal 100000      # Number of Production Timesteps
+
+# Calculate Damping Parameters in Time units
+variable gT equal v_dt*v_gammaT
+variable gP equal v_dt*v_gammaP
+
+variable label string lj-liquid-liquid.P${P}.T${T}.x
+
+# ==============================================================================
+# Set Up Simulation Box
+# ==============================================================================
+
+# Set Log File
+log min.${label}.log
+
+# Set Units, & Boundary Conditions
+units lj
+dimension 3
+boundary p p p
+
+# Set Atom Specification Style (what data is stored per atom)
+atom_style atomic
+
+# Create Box
+region box block -$L $L -$L $L -${Lz} ${Lz}
+create_box 2 box #  Note the 2 here since we have 2  atom types
+
+# ==============================================================================
+# Define Force Field (Lennard Jones)
+# ==============================================================================
+
+mass 1 1.0
+mass 2 1.0
+
+# Set Pair Coefficients Lennard-Jones
+pair_style lj/cut 3.0
+pair_coeff * * 1.0 1.0
+pair_coeff 1 2 0.5 1.0
+
+# ==============================================================================
+# Initialize System
+# ==============================================================================
+# Create Atoms
+region left block EDGE EDGE EDGE EDGE EDGE 0
+region right block EDGE EDGE EDGE EDGE 0 EDGE
+create_atoms 1 random ${n1} ${SEED1} left
+create_atoms 2 random ${n2} ${SEED2} right
+
+# Randomly Initialize Velocities at 300 K
+velocity all create ${T} ${SEED2}
+
+# ==============================================================================
+# Set Up Propagation
+# ==============================================================================
+
+# Set Timestep
+timestep ${dt}
+
+# Initialize NVE Propagator
+fix 1 all npt temp ${T} ${T} ${gT} z ${P} ${P} ${gP}
+# Note the z here. We are only compressing in the z direction
+
+# ==============================================================================
+# Set Up Output for Minimization
+# ==============================================================================
+
+# Output Thermodynamic Data every 100 Steps
+thermo_style custom step time temp press vol density ke pe econserve
+thermo 1
+# Output Atomistic Data every 100 Steps
+dump min all atom 100 min.${label}.lammpstrj
+
+
+# ==============================================================================
+# Minimize Configuration
+# ==============================================================================
+minimize 0.0 1e-8 1000 10000
+
+# ==============================================================================
+# Set Up Output for Equilibration
+# ==============================================================================
+
+log eq.lj-liquid-gas.P${P}.T${T}.log
+reset_timestep 0
+
+# Output Atomistic Data every 100 Steps
+undump min
+dump eq all atom 100 eq.${label}.lammpstrj
+
+# ==============================================================================
+# Run Equilibration
+# ==============================================================================
+run ${n_eq}
+
+# ==============================================================================
+# Set Up Output for Production
+# ==============================================================================
+log prod.${label}.log
+
+reset_timestep 0
+
+#  Density Profiles
+group LJ1 type 1
+group LJ2 type 2
+compute chunk1 LJ1 chunk/atom bin/1d z center 0.1
+compute chunk2 LJ2 chunk/atom bin/1d z center 0.1
+compute chunkall all chunk/atom bin/1d z center 0.1
+
+fix rho1 LJ1 ave/chunk 1 ${n_step} ${n_step} chunk1 density/mass file rho1.${label}.out
+fix rho2 LJ2 ave/chunk 1 ${n_step} ${n_step} chunk2 density/mass file rho2.${label}.out
+fix rhoT all ave/chunk 1 ${n_step} ${n_step} chunkall density/mass file rhoT.${label}.out
+
+# RDFs
+compute rdfT all rdf 100
+fix rdfTout all ave/time 1 ${n_step} ${n_step} c_rdfT[*] file rdf.${label}.out mode vector
+
+# Output Atomistic Data every 100 Steps
+undump eq
+dump prod all atom 100 prod.${label}.lammpstrj
+
+# ==============================================================================
+# Run Equilibration
+# ==============================================================================
+run ${n_step}
