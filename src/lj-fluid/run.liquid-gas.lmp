@@ -87,7 +87,7 @@ fix 1 all npt temp ${T} ${T} ${gT} iso ${P} ${P} ${gP}
 
 # Output Thermodynamic Data every 100 Steps
 thermo_style custom step time temp press vol density ke pe econserve
-thermo 1
+thermo 100
 # Output Atomistic Data every 100 Steps
 dump min all atom 100 min.lj-liquid-gas.P${P}.T${T}.lammpstrj
 

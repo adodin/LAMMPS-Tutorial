@@ -39,7 +39,7 @@ variable n_step equal 100000      # Number of Production Timesteps
 variable gT equal v_dt*v_gammaT
 variable gP equal v_dt*v_gammaP
 
-variable label string lj-liquid-liquid.P${P}.T${T}.x
+variable label string lj-liquid-liquid.P${P}.T${T}.x${x}
 
 # ==============================================================================
 # Set Up Simulation Box
