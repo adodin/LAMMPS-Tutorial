@@ -1,0 +1,84 @@
+# ==========================================================================
+# ==========================================================================
+# Equilibrate SPC Water Box
+# Written by: Amro Dodin (Geissler Group - UC Berkeley & LBL)
+# ==========================================================================
+# ==========================================================================
+
+# ==========================================================================
+# Set Simulation Parameters
+# ==========================================================================
+
+# Simulation Time
+variable dt equal 1.0           # Timestep (in fs)
+variable nStep equal 20000     # Simulation Duration (in Timesteps)
+
+# Temperatures
+variable TK equal 300.0     # Physical Temperature
+variable gamma equal 100    # Physical Thermostat Damping (Timesteps Unit)
+
+# Convert Nose-Hoover Damping to time units
+variable gammat equal v_gamma*v_dt
+
+# Output Frequency (in Timesteps)
+variable ThermoEvery equal 200  # Thermodynamic Output Frequency
+variable atomEvery equal 100    # per atom output frequency
+variable cvEvery    equal 100   # Collective Vars output frequency
+
+# Set Output File Prefix
+variable label string "spce"
+
+# ==========================================================================
+# Simulation Set Up
+# ==========================================================================
+
+# Basic Specification
+units real
+boundary p p p
+
+# Atom & FF Style Specification
+pair_style lj/cut/coul/long 10.0
+kspace_style pppm 1.0e-3
+atom_style full
+bond_style harmonic
+angle_style harmonic
+neighbor 2.0 bin   # Includes atoms r <= lj_cut + 2.0 in neighborlist
+
+# Read Input Data (from min.spc.lmp)
+molecule h2o ${label}.mol
+read_data data.${label}.min
+
+# ==========================================================================
+# Initialize Simulation
+# ==========================================================================
+
+# Set Time Step
+timestep ${dt}
+
+
+# ==========================================================================
+# Integration Fixes & Computes
+# ==========================================================================
+
+# Integration Fixes
+fix 1 all rattle 1.0e-6 1000 0 b 1 a 1 mol h2o
+fix 2 all nvt temp 1.0 ${TK} ${gammat}
+
+# ==========================================================================
+# Output Settings
+# ==========================================================================
+
+# Thermodynamic Output
+thermo_style custom time etotal ke pe press density temp
+thermo ${ThermoEvery}
+
+# Atom Dump
+dump at all custom ${atomEvery} ${label}.lammpstrj id mol type x y z vx vy vz fx fy fz
+
+run ${nStep}
+
+# ==========================================================================
+# Write Output Data
+# ==========================================================================
+
+write_data data.${label}.eq pair ij

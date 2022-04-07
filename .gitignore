@@ -3,3 +3,4 @@ log.*
 *.thermo
 *.lammpstrj
 *.out
+data.*

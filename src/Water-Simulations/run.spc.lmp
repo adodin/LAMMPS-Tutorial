@@ -1,0 +1,123 @@
+# ==========================================================================
+# ==========================================================================
+# Run Dynamics of SPC Water Box
+# Written by: Amro Dodin (Geissler Group - UC Berkeley & LBL)
+# ==========================================================================
+# ==========================================================================
+
+# ==========================================================================
+# Set Simulation Parameters
+# ==========================================================================
+
+# Simulation Time
+variable dt equal 1.0           # Timestep (in fs)
+variable nStep equal 20000     # Simulation Duration (in Timesteps)
+
+# Temperatures
+variable TK equal 300.0     # Physical Temperature
+variable gamma equal 100    # Physical Thermostat Damping (Timesteps Unit)
+
+# Convert Nose-Hoover Damping to time units
+variable gammat equal v_gamma*v_dt
+
+# Output Frequency (in Timesteps)
+variable ThermoEvery equal 200  # Thermodynamic Output Frequency
+variable atomEvery equal 100    # per atom output frequency
+variable cvEvery    equal 100   # Collective Vars output frequency
+
+# Set Output File Prefix
+variable label string "spc"
+
+# ==========================================================================
+# Simulation Set Up
+# ==========================================================================
+
+# Basic Specification
+units real
+boundary p p p
+
+# Atom & FF Style Specification
+pair_style lj/cut/coul/cut 10.0
+atom_style full
+bond_style harmonic
+angle_style harmonic
+neighbor 2.0 bin   # Includes atoms r <= lj_cut + 2.0 in neighborlist
+
+# Read Input Data (from min.spc.lmp)
+molecule h2o ${label}.mol
+read_data data.${label}.eq
+
+# ==========================================================================
+# Initialize Simulation
+# ==========================================================================
+
+# Set Time Step
+timestep ${dt}
+
+# ==========================================================================
+# Integration Fixes & Computes
+# ==========================================================================
+
+# Define Atom Groups
+group oxy type 1
+group hydro type 2
+
+# Diffusion Coefficients (MSD Approach)
+compute MSD oxy msd
+fix MSD oxy vector 1 c_MSD[4]
+variable DMSD equal slope(f_MSD)
+
+# DIffusion Coefficient (VACF Approach)
+compute VACF oxy vacf
+fix VACF oxy vector 1 c_VACF[4]
+variable DVACF equal dt*trap(f_VACF)
+
+# RDF & Coordination Number
+compute RDF oxy rdf 100
+
+# Water Dipole Moments & COM
+compute wat_chunk all chunk/atom molecule
+compute wat_dipoles all dipole/chunk wat_chunk
+compute wat_COM all com/chunk wat_chunk
+
+# Densities
+compute O_chunk oxy chunk/atom bin/1d z center 0.1
+compute H_chunk hydro chunk/atom bin/1d z center 0.1
+compute all_chunk all chunk/atom bin/1d z center 0.1
+
+# Integration Fixes
+fix 1 all rattle 1.0e-6 1000 0 b 1 a 1 mol h2o
+fix 2 all nvt temp ${TK} ${TK} ${gammat}
+
+# ==========================================================================
+# Output Settings
+# ==========================================================================
+
+# Thermodynamic Output
+thermo_style custom time etotal ke pe press density temp
+thermo ${ThermoEvery}
+
+# Diffusion Coefficient Output
+fix D_OUT oxy ave/time 1 ${cvEvery} ${cvEvery} c_MSD[4] v_DMSD c_VACF[4] v_DVACF &
+    file diff.${label}.out
+
+# RDF Output
+fix RDF_OUT oxy ave/time 1 ${nStep} ${nStep} c_RDF[*] &
+    file rdf.${label}.out mode vector
+
+# Water Molecule Output
+fix wat_OUT all ave/time 1 ${atomEvery} ${atomEvery} c_wat_COM[*] c_wat_dipoles[*] &
+    file water.${label}.out mode vector
+
+# Density Output
+fix rho_O oxy ave/chunk 1 ${nStep} ${nStep} O_chunk density/mass &
+    file O.rho.${label}.out
+fix rho_H hydro ave/chunk 1 ${nStep} ${nStep} H_chunk density/mass &
+    file H.rho.${label}.out
+fix rho_T all ave/chunk 1 ${nStep} ${nStep} all_chunk density/mass &
+    file rho.${label}.out
+
+# Atom Dump
+dump at all custom ${atomEvery} ${label}.lammpstrj id mol type x y z vx vy vz fx fy fz
+
+run ${nStep}
