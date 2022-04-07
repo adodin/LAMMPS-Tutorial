@@ -76,8 +76,8 @@ pair_coeff 1 2 0.5 1.0
 # Initialize System
 # ==============================================================================
 # Create Atoms
-region left block EDGE EDGE EDGE EDGE EDGE 0
-region right block EDGE EDGE EDGE EDGE 0 EDGE
+region left block EDGE EDGE EDGE EDGE EDGE ${Lint}
+region right block EDGE EDGE EDGE EDGE ${Lint} EDGE
 create_atoms 1 random ${n1} ${SEED1} left
 create_atoms 2 random ${n2} ${SEED2} right
 
